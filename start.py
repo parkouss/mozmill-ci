@@ -5,8 +5,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import os
-from subprocess import check_call, CalledProcessError
 import sys
+import signal
+from subprocess import Popen
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -16,8 +18,17 @@ JENKINS_URL = 'http://mirrors.jenkins-ci.org/war-stable/%s/jenkins.war' % JENKIN
 JENKINS_ENV = os.path.join(HERE, 'jenkins-env', 'bin', 'activate_this.py')
 JENKINS_WAR = os.path.join(HERE, 'war', 'jenkins-%s.war' % JENKINS_VERSION)
 
+JENKINS_PID = None
+
+
+def kill_jenkins(*args):
+    if JENKINS_PID:
+        os.kill(JENKINS_PID, signal.SIGTERM)
+
+signal.signal(signal.SIGTERM, kill_jenkins)
 
 def main():
+    global JENKINS_PID
     try:
         execfile(JENKINS_ENV, dict(__file__=JENKINS_ENV))
         print "Virtual environment activated successfully."
@@ -35,10 +46,9 @@ def main():
     os.environ['JENKINS_HOME'] = os.path.join(HERE, 'jenkins-master')
     args = ['java', '-Xms2g', '-Xmx2g', '-XX:MaxPermSize=512M',
             '-Xincgc', '-jar', JENKINS_WAR]
-    try:
-        check_call(args)
-    except CalledProcessError as e:
-        sys.exit(e.returncode)
+    p = Popen(args)
+    JENKINS_PID = p.pid
+    sys.exit(p.wait())
 
 
 if __name__ == "__main__":

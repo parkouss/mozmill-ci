@@ -11,6 +11,9 @@ import urllib
 import tarfile
 from subprocess import check_call
 
+import start
+
+
 DIR_TEST_ENV = "test/venv"
 DIR_JENKINS_ENV = "jenkins-env"
 VERSION_VIRTUALENV = "12.0.5"
@@ -23,25 +26,48 @@ def check_patches():
     check_call(["./test/check_patches.sh"])
 
 
-def jenkins_install():
-    if os.path.exists(DIR_JENKINS_ENV) and not os.environ.get('CI'):
-        print "Jenkins environment already exists!"
-        while True:
-            user_input = raw_input("Would you like to recreate it? (y/n): ")
-            if user_input.lower().startswith("y"):
+class Jenkins(object):
+    def __init__(self):
+        if self._require_venv_setup():
+            print "Running setup"
+            check_call(["./setup.sh", DIR_JENKINS_ENV])
+        print "Starting Jenkins"
+        self.proc = start.start_jenkins()
+
+    def _require_venv_setup(self):
+        if os.path.exists(DIR_JENKINS_ENV) and not os.environ.get('CI'):
+            print "Jenkins environment already exists!"
+            while True:
+                user_input = raw_input("Would you like to recreate it? (y/n): ")
+                if user_input.lower().startswith("y"):
+                    break
+                elif user_input.lower().startswith("n"):
+                    return False
+        return True
+
+    def wait_for_started(self):
+        import requests
+        max_time = time.time() + 60
+        session = requests.Session()
+        while time.time() <= max_time:
+            try:
+                if session.get("http://localhost:8080").status_code == 200:
+                    return True
+            except requests.exceptions.ConnectionError:
+                pass
+            time.sleep(0.5)
+        return False
+
+    def kill(self):
+        # try to kill nicely first
+        self.proc.terminate()
+        attempt = 0
+        while self.proc.poll() is None:
+            attempt += 1
+            if attempt > 500:
+                self.proc.kill()  # hard kill
                 break
-            elif user_input.lower().startswith("n"):
-                return
-    print "Running setup"
-    check_call(["./setup.sh", DIR_JENKINS_ENV])
-
-
-def jenkins_start():
-    print "Starting Jenkins"
-    import start
-    proc = start.start_jenkins()
-    time.sleep(60)  # wait for jenkins to be started
-    return proc
+            time.sleep(0.001)
 
 
 def virtualenv_create():
@@ -70,8 +96,11 @@ def virtualenv_activate():
 
 
 def run_tests():
-    jenkins_install()
-    proc = jenkins_start()
+    jenkins = Jenkins()
+    if not jenkins.wait_for_started():
+        print "Failed to start jenkins. Check the logs."
+        jenkins.kill()
+        sys.exit(1)
     try:
         virtualenv_create()
         virtualenv_activate()
@@ -79,15 +108,7 @@ def run_tests():
         check_call(['python', "test/configuration/save_config.py"])
     finally:
         print "Killing Jenkins"
-        # try to kill nicely first
-        proc.terminate()
-        attempt = 0
-        while proc.poll() is None:
-            attempt += 1
-            if attempt > 500:
-                proc.kill()  # hard kill
-                break
-            time.sleep(0.001)
+        jenkins.kill()
     check_call(["git", "--no-pager", "diff", "--exit-code"])
 
 

@@ -103,6 +103,7 @@ def run_tests():
     finally:
         print "Killing Jenkins"
         jenkins.kill()
+
     check_call(["git", "--no-pager", "diff", "--exit-code"])
 
 

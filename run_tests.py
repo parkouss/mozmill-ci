@@ -27,10 +27,10 @@ def jenkins_install():
     if os.path.exists(DIR_JENKINS_ENV) and not os.environ.get('CI'):
         print "Jenkins environment already exists!"
         while True:
-            user_input = raw_input("Would you like to recreate it? (y/n)")
-            if user_input[0].lower() == "y":
+            user_input = raw_input("Would you like to recreate it? (y/n): ")
+            if user_input.lower().startswith("y"):
                 break
-            elif user_input[0].lower() == "n":
+            elif user_input.lower().startswith("n"):
                 return
     print "Running setup"
     check_call(["./setup.sh", DIR_JENKINS_ENV])

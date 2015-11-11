@@ -38,12 +38,8 @@ class Jenkins(object):
     def _require_venv_setup(self):
         if os.path.exists(DIR_JENKINS_ENV) and not os.environ.get('CI'):
             print "Jenkins environment already exists!"
-            while True:
-                user_input = raw_input("Would you like to recreate it? (y/n): ")
-                if user_input.lower().startswith("y"):
-                    break
-                elif user_input.lower().startswith("n"):
-                    return False
+            print "Run './setup.sh' if you want to recreate it."
+            return False
         return True
 
     def wait_for_started(self):

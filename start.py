@@ -6,7 +6,6 @@
 
 import os
 import sys
-import signal
 from subprocess import Popen
 
 
@@ -18,17 +17,8 @@ JENKINS_URL = 'http://mirrors.jenkins-ci.org/war-stable/%s/jenkins.war' % JENKIN
 JENKINS_ENV = os.path.join(HERE, 'jenkins-env', 'bin', 'activate_this.py')
 JENKINS_WAR = os.path.join(HERE, 'war', 'jenkins-%s.war' % JENKINS_VERSION)
 
-JENKINS_PID = None
 
-
-def kill_jenkins(*args):
-    if JENKINS_PID:
-        os.kill(JENKINS_PID, signal.SIGTERM)
-
-signal.signal(signal.SIGTERM, kill_jenkins)
-
-def main():
-    global JENKINS_PID
+def start_jenkins():
     try:
         execfile(JENKINS_ENV, dict(__file__=JENKINS_ENV))
         print "Virtual environment activated successfully."
@@ -46,10 +36,9 @@ def main():
     os.environ['JENKINS_HOME'] = os.path.join(HERE, 'jenkins-master')
     args = ['java', '-Xms2g', '-Xmx2g', '-XX:MaxPermSize=512M',
             '-Xincgc', '-jar', JENKINS_WAR]
-    p = Popen(args)
-    JENKINS_PID = p.pid
-    sys.exit(p.wait())
+    return Popen(args)
 
 
 if __name__ == "__main__":
-    main()
+    proc = start_jenkins()
+    sys.exit(proc.wait())

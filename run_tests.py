@@ -9,7 +9,7 @@ import sys
 import time
 import urllib
 import tarfile
-from subprocess import check_call, Popen
+from subprocess import check_call
 
 DIR_TEST_ENV = "test/venv"
 DIR_JENKINS_ENV = "jenkins-env"
@@ -38,7 +38,8 @@ def jenkins_install():
 
 def jenkins_start():
     print "Starting Jenkins"
-    proc = Popen([sys.executable, "start.py"])
+    import start
+    proc = start.start_jenkins()
     time.sleep(60)  # wait for jenkins to be started
     return proc
 
@@ -78,7 +79,15 @@ def run_tests():
         check_call(['python', "test/configuration/save_config.py"])
     finally:
         print "Killing Jenkins"
+        # try to kill nicely first
         proc.terminate()
+        attempt = 0
+        while proc.poll() is None:
+            attempt += 1
+            if attempt > 500:
+                proc.kill()  # hard kill
+                break
+            time.sleep(0.001)
     check_call(["git", "--no-pager", "diff", "--exit-code"])
 
 

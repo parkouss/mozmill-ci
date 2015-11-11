@@ -6,7 +6,6 @@
 
 import os
 import sys
-from subprocess import Popen
 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -26,8 +25,10 @@ def start_jenkins():
         print 'Could not activate virtual environment at "%s": %s.' % (JENKINS_ENV, str(ex))
         sys.exit(1)
 
-    # Download the Jenkins WAR file
+    from mozprocess.processhandler import ProcessHandler
     from mozdownload import DirectScraper
+
+    # Download the Jenkins WAR file
     scraper = DirectScraper(url=JENKINS_URL, destination=JENKINS_WAR)
     scraper.download()
 
@@ -36,7 +37,9 @@ def start_jenkins():
     os.environ['JENKINS_HOME'] = os.path.join(HERE, 'jenkins-master')
     args = ['java', '-Xms2g', '-Xmx2g', '-XX:MaxPermSize=512M',
             '-Xincgc', '-jar', JENKINS_WAR]
-    return Popen(args)
+    proc = ProcessHandler(args)
+    proc.run()
+    return proc
 
 
 if __name__ == "__main__":

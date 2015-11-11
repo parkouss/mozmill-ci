@@ -58,15 +58,7 @@ class Jenkins(object):
         raise Exception("Jenkins did not start successfully - check the logs.")
 
     def kill(self):
-        # try to kill nicely first
-        self.proc.terminate()
-        attempt = 0
-        while self.proc.poll() is None:
-            attempt += 1
-            if attempt > 500:
-                self.proc.kill()  # hard kill
-                break
-            time.sleep(0.001)
+        self.proc.kill()
 
 
 def virtualenv_create():

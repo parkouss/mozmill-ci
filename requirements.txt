@@ -4,6 +4,7 @@ mozdownload==1.19
 python-jenkins==0.4.8
 requests==2.7.0
 taskcluster==0.0.24
+mozprocess==0.22 
 
 # https://github.com/mozilla/mozmill-ci/issues/628
 # As long as Python 2.7.10 cannot be used on our master machines

@@ -17,7 +17,7 @@ import start
 
 DIR_TEST_ENV = "test/venv"
 DIR_JENKINS_ENV = "jenkins-env"
-VERSION_VIRTUALENV = "12.0.5"
+VERSION_VIRTUALENV = "13.1.2"
 
 os.environ["JENKINS_HOME"] = "jenkins-master"
 

@@ -25,8 +25,8 @@ def start_jenkins():
         print 'Could not activate virtual environment at "%s": %s.' % (JENKINS_ENV, str(ex))
         sys.exit(1)
 
-    from mozprocess.processhandler import ProcessHandler
     from mozdownload import DirectScraper
+    from mozprocess.processhandler import ProcessHandler
 
     # Download the Jenkins WAR file
     scraper = DirectScraper(url=JENKINS_URL, destination=JENKINS_WAR)

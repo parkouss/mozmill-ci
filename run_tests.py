@@ -7,7 +7,6 @@
 import os
 import sys
 import tarfile
-import time
 import urllib
 
 from subprocess import check_call
@@ -32,21 +31,19 @@ class Jenkins(object):
         self.proc = start.start_jenkins()
 
     def wait_for_started(self):
-        # late import because we need the jenkins virtualenv to be activated
+        # late imports because we need the jenkins virtualenv to be activated
         # (this is done in the constructor)
+        import redo
         import requests
 
-        max_time = time.time() + 60
         session = requests.Session()
 
-        while time.time() <= max_time:
-            try:
-                if session.get("http://localhost:8080").status_code == 200:
-                    return
-            except requests.exceptions.ConnectionError:
-                pass
-            time.sleep(0.5)
-        raise Exception("Jenkins did not start successfully - check the logs.")
+        def wait_for_jenkins():
+            if not session.get("http://localhost:8080").status_code == 200:
+                raise Exception("Jenkins did not start successfully.")
+
+        redo.retry(wait_for_jenkins, sleeptime=0.5, jitter=0, sleepscale=1,
+                   attempts=120)
 
     def kill(self):
         self.proc.kill()

@@ -25,6 +25,7 @@ def start_jenkins():
         print 'Could not activate virtual environment at "%s": %s.' % (JENKINS_ENV, str(ex))
         sys.exit(1)
 
+    # do imports here because it requires the virtualenv to b activated
     from mozdownload import DirectScraper
     from mozprocess.processhandler import ProcessHandler
 

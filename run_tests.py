@@ -32,6 +32,8 @@ class Jenkins(object):
         self.proc = start.start_jenkins()
 
     def wait_for_started(self):
+        # late import because we need the jenkins virtualenv to be activated
+        # (this is done in the constructor)
         import requests
 
         max_time = time.time() + 60

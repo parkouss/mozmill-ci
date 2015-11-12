@@ -18,13 +18,6 @@ DIR_TEST_ENV = "test/venv"
 DIR_JENKINS_ENV = "jenkins-env"
 VERSION_VIRTUALENV = "13.1.2"
 
-os.environ["JENKINS_HOME"] = "jenkins-master"
-
-
-def check_patches():
-    print "Checking patches"
-    check_call(["./test/check_patches.sh"])
-
 
 class Jenkins(object):
     def __init__(self):
@@ -49,43 +42,51 @@ class Jenkins(object):
         self.proc.kill()
 
 
-def virtualenv_create():
-    if os.path.exists(DIR_TEST_ENV):
-        print "Using virtual environment in ", DIR_TEST_ENV
-        return
+class VirtualEnv(object):
+    def __init__(self):
+        if os.path.exists(DIR_TEST_ENV):
+            print "Using virtual environment in ", DIR_TEST_ENV
+            return
 
-    tar_fname = 'virtualenv-%s.tar.gz' % VERSION_VIRTUALENV
-    print ('Creating a virtual environment (version %s) in %s'
-           % (VERSION_VIRTUALENV, DIR_TEST_ENV))
-    urllib.urlretrieve(
-        'https://pypi.python.org/packages/source/v/virtualenv/%s' % tar_fname,
-        tar_fname
-    )
+        tar_fname = 'virtualenv-%s.tar.gz' % VERSION_VIRTUALENV
+        print ('Creating a virtual environment (version %s) in %s'
+               % (VERSION_VIRTUALENV, DIR_TEST_ENV))
+        urllib.urlretrieve(
+            ('https://pypi.python.org/packages/source/v/virtualenv/%s'
+             % tar_fname),
+            tar_fname
+        )
 
-    tar = tarfile.open(name=tar_fname)
-    tar.extractall(path='.')
-    check_call([sys.executable,
-                "virtualenv-%s/virtualenv.py" % VERSION_VIRTUALENV,
-                DIR_TEST_ENV])
+        tar = tarfile.open(name=tar_fname)
+        tar.extractall(path='.')
+        check_call([sys.executable,
+                    "virtualenv-%s/virtualenv.py" % VERSION_VIRTUALENV,
+                    DIR_TEST_ENV])
 
+    def activate(self):
+        activate_this_file = os.path.join(DIR_TEST_ENV, 'bin',
+                                          'activate_this.py')
+        execfile(activate_this_file, dict(__file__=activate_this_file))
 
-def virtualenv_activate():
-    activate_this_file = os.path.join(DIR_TEST_ENV, 'bin', 'activate_this.py')
-    execfile(activate_this_file, dict(__file__=activate_this_file))
+    def run(self, *args, **kwargs):
+        check_call(args, **kwargs)
 
 
 def run_tests():
-    check_patches()
+    print "Checking patches"
+    check_call(["./test/check_patches.sh"])
+
     if not os.path.exists(DIR_JENKINS_ENV):
         sys.exit("Jenkins env is not initialized. Please run './setup.sh'")
     print "Starting Jenkins"
+    os.environ["JENKINS_HOME"] = "jenkins-master"
     jenkins = Jenkins()
     try:
         jenkins.wait_for_started()
-        virtualenv_create()
-        virtualenv_activate()
-        check_call(['pip', 'install', 'selenium'])
-        check_call(['python', "test/configuration/save_config.py"])
+        venv = VirtualEnv()
+        venv.activate()
+        venv.run('pip', 'install', 'selenium')
+        venv.run('python', "test/configuration/save_config.py")
     except Exception as exc:
         sys.exit(str(exc))
     finally:

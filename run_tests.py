@@ -83,15 +83,12 @@ def run_tests():
     jenkins = Jenkins()
     try:
         jenkins.wait_for_started()
-    except Exception as exc:
-        print str(exc)
-        jenkins.kill()
-        sys.exit(1)
-    try:
         virtualenv_create()
         virtualenv_activate()
         check_call(['pip', 'install', 'selenium'])
         check_call(['python', "test/configuration/save_config.py"])
+    except Exception as exc:
+        sys.exit(str(exc))
     finally:
         print "Killing Jenkins"
         jenkins.kill()

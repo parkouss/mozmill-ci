@@ -29,18 +29,7 @@ def check_patches():
 
 class Jenkins(object):
     def __init__(self):
-        if self._require_venv_setup():
-            print "Running setup"
-            check_call(["./setup.sh", DIR_JENKINS_ENV])
-        print "Starting Jenkins"
         self.proc = start.start_jenkins()
-
-    def _require_venv_setup(self):
-        if os.path.exists(DIR_JENKINS_ENV) and not os.environ.get('CI'):
-            print "Jenkins environment already exists!"
-            print "Run './setup.sh' if you want to recreate it."
-            return False
-        return True
 
     def wait_for_started(self):
         import requests
@@ -88,6 +77,9 @@ def virtualenv_activate():
 
 def run_tests():
     check_patches()
+    if not os.path.exists(DIR_JENKINS_ENV):
+        sys.exit("Jenkins env is not initialized. Please run './setup.sh'")
+    print "Starting Jenkins"
     jenkins = Jenkins()
     try:
         jenkins.wait_for_started()
